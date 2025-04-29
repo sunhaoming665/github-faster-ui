@@ -152,13 +152,13 @@
     </div>
 
     <script>
-        const PREFIX = "/"; // 这里假设PREFIX为"/"，但通常应该是一个具体的路径，如"/download/"
+        const PREFIX = "/"; // 这里为"/"
 
         function handleConvert() {
             const input = document.getElementById('urlInput').value;
             if (!input) return;
             
-            const encoded = encodeURIComponent(input);
+            const encoded = encodeURI(input);
             window.location.href = `${window.location.origin}${PREFIX}${encoded}`;
         }
     </script>
