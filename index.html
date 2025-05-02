@@ -7,27 +7,154 @@
     <!-- Cloudflare Turnstile 验证库 -->
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     <style>
-        /* 样式部分保持不变 */
-        :root { /* 原有样式 */ }
-        body { /* 原有样式 */ }
-        .container { /* 原有样式 */ }
-        .header { /* 原有样式 */ }
-        .github-logo { /* 原有样式 */ }
-        h1 { /* 原有样式 */ }
-        .card { /* 原有样式 */ }
-        .input-group { /* 原有样式 */ }
-        #urlInput { /* 原有样式 */ }
-        button { /* 原有样式 */ }
-        #captchaContainer { /* 原有样式 */ }
-        .loading-state { /* 原有样式 */ }
-        .error-alert { /* 原有样式 */ }
-        .features-grid { /* 原有样式 */ }
-        .feature-card { /* 原有样式 */ }
-        @media (max-width: 600px) { /* 原有样式 */ }
+        :root {
+            --primary-blue: #2185d0;
+            --background: #f8f9fa;
+            --card-bg: #ffffff;
+            --error-red: #dc3545;
+            --success-green: #28a745;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 2rem;
+            background: var(--background);
+            color: #2c3e50;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding: 2rem;
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        .github-logo {
+            width: 100px;
+            height: 100px;
+            margin-bottom: 1.5rem;
+            fill: var(--primary-blue);
+        }
+
+        h1 {
+            color: var(--primary-blue);
+            margin: 0.8rem 0;
+            font-size: 2.4rem;
+            letter-spacing: -0.5px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .input-group {
+            display: flex;
+            gap: 1rem;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+        }
+
+        #urlInput {
+            flex: 1;
+            padding: 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            min-width: 280px;
+            transition: border-color 0.2s;
+        }
+
+        #urlInput:focus {
+            border-color: var(--primary-blue);
+            outline: none;
+        }
+
+        button {
+            background: var(--primary-blue);
+            color: white;
+            border: none;
+            padding: 1rem 2.5rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.1s, opacity 0.2s;
+            font-weight: 500;
+        }
+
+        button:hover {
+            opacity: 0.92;
+            transform: translateY(-1px);
+        }
+
+        #captchaContainer {
+            margin: 1.5rem 0;
+            min-height: 70px;
+            transition: opacity 0.3s;
+        }
+
+        .loading-state {
+            display: none;
+            color: var(--primary-blue);
+            text-align: center;
+            padding: 1.5rem;
+            font-size: 1.1rem;
+        }
+
+        .error-alert {
+            color: var(--error-red);
+            margin: 1rem 0;
+            padding: 1.2rem;
+            background: #fff5f5;
+            border-radius: 8px;
+            display: none;
+            border: 1px solid #ffe3e3;
+        }
+
+        .success-alert {
+            color: var(--success-green);
+            margin: 1rem 0;
+            padding: 1.2rem;
+            background: #f0fff4;
+            border-radius: 8px;
+            display: none;
+            border: 1px solid #c3e6cb;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .feature-card {
+            padding: 1.5rem;
+            background: var(--card-bg);
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        @media (max-width: 600px) {
+            body { padding: 1rem; }
+            .input-group { flex-direction: column; }
+            button { width: 100%; }
+            h1 { font-size: 2rem; }
+        }
     </style>
 </head>
 <body>
-    <!-- HTML结构保持不变 -->
     <div class="container">
         <div class="header">
             <svg class="github-logo" viewBox="0 0 24 24">
@@ -51,6 +178,7 @@
             <div id="captchaContainer"></div>
             <div class="loading-state" id="loading">安全验证中，请稍候...</div>
             <div class="error-alert" id="errorMsg"></div>
+            <div class="success-alert" id="successMsg"></div>
         </div>
 
         <div class="features-grid">
@@ -70,7 +198,7 @@
     </div>
 
     <script>
-        // 配置中心（关键更新）
+        // 配置中心
         const CONFIG = {
             siteKey: '0x4AAAAAABYaCPRjG940rBlb',
             verifyEndpoint: 'https://github-faster.sunhaoming.dpdns.org/verify',
@@ -83,33 +211,27 @@
         let verification = {
             widget: null,
             attempts: 0,
-            lastToken: null
+            lastToken: null,
+            isLoading: false
         }
 
-        // 初始化验证（增加容错）
-        function initTurnstile() {
+        // 初始化验证
+        async function initTurnstile() {
             return new Promise((resolve, reject) => {
                 if (typeof turnstile === 'undefined') {
-                    reject(new Error('验证库加载失败'))
+                    reject(new Error('验证系统初始化失败，请刷新页面'))
                     return
                 }
 
                 try {
                     verification.widget = turnstile.render('#captchaContainer', {
                         sitekey: CONFIG.siteKey,
-                        theme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
+                        theme: detectColorScheme(),
                         size: 'normal',
-                        language: navigator.language === 'zh-CN' ? 'zh-CN' : 'en',
-                        callback: async (token) => {
-                            verification.attempts = 0
-                            verification.lastToken = token
-                            await handleVerificationSuccess(token)
-                        },
-                        'error-callback': () => handleError('验证加载失败，请刷新页面'),
-                        'expired-callback': () => {
-                            verification.lastToken = null
-                            handleError('验证已过期，请重新验证')
-                        }
+                        language: navigator.language.startsWith('zh') ? 'zh-CN' : 'en',
+                        callback: handleCaptchaSuccess,
+                        'error-callback': handleCaptchaError,
+                        'expired-callback': handleCaptchaExpired
                     })
                     resolve()
                 } catch (err) {
@@ -118,42 +240,69 @@
             })
         }
 
-        // 启动验证流程（增加重试机制）
+        // 颜色主题检测
+        function detectColorScheme() {
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+        }
+
+        // 验证成功回调
+        async function handleCaptchaSuccess(token) {
+            verification.attempts = 0
+            verification.lastToken = token
+            await handleVerificationSuccess(token)
+        }
+
+        // 验证错误处理
+        function handleCaptchaError() {
+            showError('验证加载失败，请刷新页面')
+            verification.widget = null
+        }
+
+        // 验证过期处理
+        function handleCaptchaExpired() {
+            showError('验证已过期，请重新验证')
+            verification.lastToken = null
+        }
+
+        // 启动验证流程
         async function startVerification() {
+            if (verification.isLoading) return
+
+            const input = document.getElementById('urlInput').value.trim()
+            if (!validateInput(input)) return
+
+            verification.isLoading = true
+            showLoading()
+            hideMessages()
+
             try {
-                const input = document.getElementById('urlInput').value.trim()
-                if (!validateInput(input)) return
-
-                showLoading()
-                hideError()
-
                 if (!verification.widget) {
                     await initTurnstile()
                 } else {
                     turnstile.reset(verification.widget)
                 }
             } catch (err) {
-                handleError(`验证初始化失败: ${err.message}`)
+                handleError(err.message)
             } finally {
+                verification.isLoading = false
                 hideLoading()
             }
         }
 
-        // 处理验证成功（关键更新）
+        // 处理验证成功
         async function handleVerificationSuccess(token) {
             try {
                 showLoading()
-                
-                // 添加时间戳校验
                 const timestamp = Date.now()
-                const isValid = await verifyToken(token, timestamp)
                 
+                const isValid = await verifyToken(token, timestamp)
                 if (!isValid) {
                     turnstile.reset(verification.widget)
                     throw new Error('验证未通过，请重试')
                 }
 
-                redirectToProxy(document.getElementById('urlInput').value)
+                showSuccess('验证通过，正在跳转...')
+                setTimeout(() => redirectToProxy(document.getElementById('urlInput').value), 1500)
             } catch (err) {
                 handleError(err.message)
             } finally {
@@ -161,7 +310,7 @@
             }
         }
 
-        // 后端验证（关键更新）
+        // 后端验证
         async function verifyToken(token, timestamp) {
             const controller = new AbortController()
             const timeoutId = setTimeout(() => controller.abort(), CONFIG.timeout)
@@ -195,22 +344,21 @@
             }
         }
 
-        // 跳转逻辑（增加调试信息）
+        // 跳转逻辑
         function redirectToProxy(originalUrl) {
             try {
                 const proxyUrl = generateProxyUrl(originalUrl)
-                console.debug('跳转至加速链接:', proxyUrl)
+                console.debug('跳转至:', proxyUrl)
                 window.location.href = proxyUrl
             } catch (err) {
                 handleError('生成加速链接失败')
             }
         }
 
-        // 生成加速链接（优化逻辑）
+        // 生成加速链接
         function generateProxyUrl(originalUrl) {
             const encodedUrl = encodeURIComponent(originalUrl)
             
-            // 智能路由
             if (originalUrl.includes('/releases/download/')) {
                 return `https://github-faster.sunhaoming.dpdns.org/dl/${encodedUrl}`
             }
@@ -224,7 +372,7 @@
             return `https://github-faster.sunhaoming.dpdns.org/proxy/${encodedUrl}`
         }
 
-        // 输入验证（增强校验）
+        // 输入验证
         function validateInput(url) {
             if (!url) {
                 showError('请输入GitHub文件链接')
@@ -244,7 +392,7 @@
             return true
         }
 
-        // UI控制（优化交互）
+        // UI 控制
         function showLoading() {
             document.getElementById('loading').style.display = 'block'
             document.querySelector('button').disabled = true
@@ -256,23 +404,47 @@
         }
 
         function showError(message) {
+            hideSuccess()
             const el = document.getElementById('errorMsg')
             el.textContent = message
             el.style.display = 'block'
             document.getElementById('urlInput').focus()
         }
 
+        function showSuccess(message) {
+            hideError()
+            const el = document.getElementById('successMsg')
+            el.textContent = message
+            el.style.display = 'block'
+        }
+
+        function hideMessages() {
+            hideError()
+            hideSuccess()
+        }
+
         function hideError() {
             document.getElementById('errorMsg').style.display = 'none'
         }
 
-        // 事件监听（增加防抖）
-        let debounceTimer
+        function hideSuccess() {
+            document.getElementById('successMsg').style.display = 'none'
+        }
+
+        // 事件监听
         document.getElementById('urlInput').addEventListener('keypress', e => {
             if (e.key === 'Enter') {
-                clearTimeout(debounceTimer)
-                debounceTimer = setTimeout(startVerification, 300)
+                e.preventDefault()
+                startVerification()
             }
+        })
+
+        // 初始化验证
+        window.addEventListener('load', () => {
+            initTurnstile().catch(err => {
+                console.error('验证初始化失败:', err)
+                showError('验证系统初始化失败，请刷新页面')
+            })
         })
     </script>
 </body>
