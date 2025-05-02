@@ -3,24 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GitHub 加速服务 | 极速下载</title>
+    <title>GitHub 极速下载服务 | 国内加速</title>
     <!-- Cloudflare Turnstile 验证库 -->
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     <style>
         :root {
-            --primary-color: #2185d0;
+            --primary-blue: #2185d0;
             --background: #f8f9fa;
             --card-bg: #ffffff;
             --error-red: #dc3545;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             line-height: 1.6;
             margin: 0;
             padding: 2rem;
             background: var(--background);
-            color: #333;
+            color: #2c3e50;
         }
 
         .container {
@@ -34,19 +34,21 @@
             padding: 2rem;
             background: var(--card-bg);
             border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         }
 
-        .logo {
-            width: 80px;
-            height: 80px;
-            margin-bottom: 1rem;
+        .github-logo {
+            width: 100px;
+            height: 100px;
+            margin-bottom: 1.5rem;
+            fill: var(--primary-blue);
         }
 
         h1 {
-            color: var(--primary-color);
-            margin: 0.5rem 0;
-            font-size: 2.5rem;
+            color: var(--primary-blue);
+            margin: 0.8rem 0;
+            font-size: 2.4rem;
+            letter-spacing: -0.5px;
         }
 
         .card {
@@ -54,7 +56,7 @@
             border-radius: 12px;
             padding: 2rem;
             margin-bottom: 2rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
 
         .input-group {
@@ -64,128 +66,138 @@
             flex-wrap: wrap;
         }
 
-        input {
+        #urlInput {
             flex: 1;
-            padding: 0.8rem;
-            border: 1px solid #ddd;
-            border-radius: 8px;
+            padding: 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
             font-size: 1rem;
-            min-width: 250px;
+            min-width: 280px;
+            transition: border-color 0.2s;
+        }
+
+        #urlInput:focus {
+            border-color: var(--primary-blue);
+            outline: none;
         }
 
         button {
-            background: var(--primary-color);
+            background: var(--primary-blue);
             color: white;
             border: none;
-            padding: 0.8rem 2rem;
-            border-radius: 8px;
+            padding: 1rem 2.5rem;
+            border-radius: 10px;
             cursor: pointer;
-            transition: opacity 0.2s;
-            flex-shrink: 0;
+            transition: transform 0.1s, opacity 0.2s;
+            font-weight: 500;
         }
 
         button:hover {
-            opacity: 0.9;
+            opacity: 0.92;
+            transform: translateY(-1px);
         }
 
-        /* 验证相关样式 */
+        /* 验证模块 */
         #captchaContainer {
-            margin: 1rem 0;
-            min-height: 65px;
+            margin: 1.5rem 0;
+            min-height: 70px;
             transition: opacity 0.3s;
-            width: 100%;
         }
 
-        .loading {
+        .loading-state {
             display: none;
-            color: var(--primary-color);
+            color: var(--primary-blue);
             text-align: center;
-            padding: 1rem;
-            animation: pulse 1.5s infinite;
+            padding: 1.5rem;
+            font-size: 1.1rem;
         }
 
-        .error-message {
+        .error-alert {
             color: var(--error-red);
             margin: 1rem 0;
-            padding: 1rem;
-            background: #ffeef0;
+            padding: 1.2rem;
+            background: #fff5f5;
             border-radius: 8px;
             display: none;
+            border: 1px solid #ffe3e3;
         }
 
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .feature-card {
+            padding: 1.5rem;
+            background: var(--card-bg);
+            border-radius: 10px;
+            text-align: center;
         }
 
         @media (max-width: 600px) {
-            body {
-                padding: 1rem;
-            }
+            body { padding: 1rem; }
             
             .input-group {
                 flex-direction: column;
             }
             
-            button {
-                width: 100%;
-            }
+            button { width: 100%; }
             
-            h1 {
-                font-size: 2rem;
-            }
+            h1 { font-size: 2rem; }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <svg class="logo" viewBox="0 0 24 24" fill="currentColor">
+            <svg class="github-logo" viewBox="0 0 24 24">
                 <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.793-.258.793-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.815 2.809 1.29 3.495.99.108-.776.417-1.29.76-1.604-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>
             </svg>
-            <h1>GitHub 加速服务</h1>
-            <p>安全快速的GitHub资源加速方案</p>
+            <h1>GitHub 极速下载服务</h1>
+            <p>基于 Cloudflare 全球加速网络</p>
         </div>
 
         <div class="card">
             <div class="input-group">
-                <input type="text" 
-                       placeholder="输入GitHub文件URL，例如：https://github.com/user/repo/blob/main/file.zip"
+                <input type="url" 
                        id="urlInput"
+                       placeholder="输入 GitHub 文件链接，例如：https://github.com/user/repo/blob/main/file.zip"
                        autocomplete="off"
-                       spellcheck="false">
+                       spellcheck="false"
+                       required>
                 <button onclick="startVerification()">立即加速</button>
             </div>
             
-            <!-- Turnstile验证容器 -->
             <div id="captchaContainer"></div>
-            <div class="loading" id="loading">安全验证中...</div>
-            <div class="error-message" id="errorMsg"></div>
+            <div class="loading-state" id="loading">安全验证中，请稍候...</div>
+            <div class="error-alert" id="errorMsg"></div>
         </div>
 
-        <div class="features">
-            <div class="feature-item">
-                <h3>⏩ 极速下载</h3>
-                <p>通过cloudflare全球CDN节点智能加速</p>
+        <div class="features-grid">
+            <div class="feature-card">
+                <h3>⏩ 智能加速</h3>
+                <p>自动选择最优 CDN 节点</p>
             </div>
-            <div class="feature-item">
-                <h3>🔒 安全验证</h3>
-                <p>Cloudflare企业级安全防护</p>
+            <div class="feature-card">
+                <h3>🔒 安全防护</h3>
+                <p>企业级 cloudflare 防护</p>
             </div>
-            <div class="feature-item">
-                <h3>🆓 完全免费</h3>
-                <p>开源项目永久免费使用</p>
+            <div class="feature-card">
+                <h3>📦 多协议支持</h3>
+                <p>支持 Releases/Blob/Raw 等格式</p>
             </div>
         </div>
     </div>
 
     <script>
-        // 配置参数
+        // 配置中心
         const CONFIG = {
-            prefix: '/',
             siteKey: '0x4AAAAAABYaCPRjG940rBlb',
-            maxAttempts: 3
+            verifyEndpoint: 'https://github-faster.sunhaoming.dpdns.org/verify',
+            maxAttempts: 3,
+            timeout: 15000 // 15秒超时
         }
 
         // 状态管理
@@ -197,19 +209,24 @@
 
         // 初始化验证
         function initTurnstile() {
-            return new Promise((resolve) => {
-                verification.widget = turnstile.render('#captchaContainer', {
-                    sitekey: CONFIG.siteKey,
-                    theme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
-                    size: 'compact',
-                    callback: async (token) => {
-                        verification.attempts = 0;
-                        await handleVerificationSuccess(token);
-                    },
-                    'error-callback': () => handleVerificationError('验证加载失败'),
-                    'expired-callback': () => handleVerificationError('验证已过期，请重试')
-                });
-                resolve();
+            return new Promise((resolve, reject) => {
+                try {
+                    verification.widget = turnstile.render('#captchaContainer', {
+                        sitekey: CONFIG.siteKey,
+                        theme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
+                        size: 'normal',
+                        language: navigator.language === 'zh-CN' ? 'zh-CN' : 'en',
+                        callback: async (token) => {
+                            verification.attempts = 0;
+                            await handleVerificationSuccess(token);
+                        },
+                        'error-callback': () => handleError('验证加载失败，请重试'),
+                        'expired-callback': () => handleError('验证已过期')
+                    });
+                    resolve();
+                } catch (err) {
+                    reject(err);
+                }
             });
         }
 
@@ -229,8 +246,8 @@
                     await initTurnstile();
                 }
                 turnstile.reset(verification.widget);
-            } catch (error) {
-                handleVerificationError('验证系统初始化失败');
+            } catch (err) {
+                handleError(`验证系统错误：${err.message}`);
             } finally {
                 verification.isLoading = false;
                 toggleLoading(false);
@@ -242,90 +259,119 @@
             try {
                 toggleLoading(true);
                 
-                // 执行前端预验证
                 const isValid = await verifyToken(token);
                 if (!isValid) throw new Error('验证未通过');
 
-                // 编码并跳转
-                const encodedURL = encodeURIComponent(document.getElementById('urlInput').value);
-                window.location.href = `https://github-faster.sunhaoming.dpdns.org${CONFIG.prefix}${encodedURL}?cf-turnstile=${token}`;
-            } catch (error) {
-                handleVerificationError(error.message || '验证失败');
+                const originalUrl = document.getElementById('urlInput').value;
+                const proxyUrl = generateProxyUrl(originalUrl);
+                window.location.href = proxyUrl;
+            } catch (err) {
+                handleError(err.message || '验证失败');
                 verification.widget && turnstile.reset(verification.widget);
             } finally {
                 toggleLoading(false);
             }
         }
 
-        // 前端预验证函数
+        // 后端验证
         async function verifyToken(token) {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), CONFIG.timeout);
+
             try {
-                const response = await fetch('/verify', {
+                const response = await fetch(CONFIG.verifyEndpoint, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ token })
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Origin': window.location.origin
+                    },
+                    body: JSON.stringify({ token }),
+                    signal: controller.signal
                 });
-                return response.ok;
-            } catch {
+
+                clearTimeout(timeoutId);
+
+                if (!response.ok) return false;
+                const { valid } = await response.json();
+                return valid;
+            } catch (err) {
+                if (err.name === 'AbortError') {
+                    handleError('验证请求超时');
+                } else {
+                    handleError('网络连接异常');
+                }
                 return false;
             }
+        }
+
+        // 生成加速链接
+        function generateProxyUrl(originalUrl) {
+            const encoded = encodeURIComponent(originalUrl);
+            
+            // 处理不同资源类型
+            if (originalUrl.includes('/releases/')) {
+                return `https://github-faster.sunhaoming.dpdns.org/dl/${encoded}`;
+            }
+            
+            if (originalUrl.includes('/blob/')) {
+                const jsdelivrUrl = originalUrl
+                    .replace('/blob/', '@')
+                    .replace('github.com', 'cdn.jsdelivr.net/gh');
+                return jsdelivrUrl;
+            }
+
+            return `https://github-faster.sunhaoming.dpdns.org/proxy/${encoded}`;
         }
 
         // 输入验证
         function validateInput(url) {
             if (!url) {
-                showError('请输入GitHub文件URL');
+                showError('请输入有效的 GitHub 链接');
                 return false;
             }
             
-            const githubPattern = /^(https?:\/\/)?github\.com\/.+/i;
-            if (!githubPattern.test(url)) {
-                showError('请输入有效的GitHub链接');
+            const patterns = [
+                /^(https?:\/\/)?github\.com\/.+/i,
+                /^(https?:\/\/)?raw\.githubusercontent\.com\/.+/i,
+                /^(https?:\/\/)?gist\.github\.com\/.+/i
+            ];
+            
+            if (!patterns.some(p => p.test(url))) {
+                showError('仅支持 GitHub 官方资源链接');
                 return false;
             }
             return true;
         }
 
-        // 错误处理
-        function handleVerificationError(message) {
-            verification.attempts++;
-            
-            if (verification.attempts >= CONFIG.maxAttempts) {
-                showError('验证失败次数过多，请刷新页面后重试');
-                disableInput();
-            } else {
-                showError(`${message} (尝试次数：${verification.attempts}/${CONFIG.maxAttempts})`);
-            }
-        }
-
-        // 显示/隐藏加载状态
+        // UI 控制
         function toggleLoading(show) {
             document.getElementById('loading').style.display = show ? 'block' : 'none';
         }
 
-        // 显示错误信息
         function showError(message) {
-            const errorEl = document.getElementById('errorMsg');
-            errorEl.textContent = message;
-            errorEl.style.display = 'block';
+            const el = document.getElementById('errorMsg');
+            el.textContent = message;
+            el.style.display = 'block';
         }
 
-        // 隐藏错误信息
         function hideError() {
             document.getElementById('errorMsg').style.display = 'none';
         }
 
-        // 禁用输入（达到最大尝试次数时）
-        function disableInput() {
-            document.getElementById('urlInput').disabled = true;
-            document.querySelector('button').disabled = true;
-            setTimeout(() => {
-                window.location.reload();
-            }, 5000);
+        function handleError(message) {
+            verification.attempts++;
+            
+            if (verification.attempts >= CONFIG.maxAttempts) {
+                showError('操作过于频繁，请稍后重试');
+                document.getElementById('urlInput').disabled = true;
+                setTimeout(() => location.reload(), 5000);
+            } else {
+                showError(`${message} (${verification.attempts}/${CONFIG.maxAttempts})`);
+            }
         }
 
-        // 输入框回车事件
-        document.getElementById('urlInput').addEventListener('keypress', (e) => {
+        // 事件监听
+        document.getElementById('urlInput').addEventListener('keypress', e => {
             if (e.key === 'Enter') startVerification();
         });
     </script>
