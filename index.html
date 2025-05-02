@@ -248,7 +248,7 @@
 
                 // 编码并跳转
                 const encodedURL = encodeURIComponent(document.getElementById('urlInput').value);
-                window.location.href = `${window.location.origin}${CONFIG.prefix}${encodedURL}?cf-turnstile=${token}`;
+                window.location.href = `https://github-faster.sunhaoming.dpdns.org${CONFIG.prefix}${encodedURL}?cf-turnstile=${token}`;
             } catch (error) {
                 handleVerificationError(error.message || '验证失败');
                 verification.widget && turnstile.reset(verification.widget);
