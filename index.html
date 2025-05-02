@@ -212,106 +212,76 @@
             lastToken: null
         }
 
-        // 消息管理函数
-        function hideMessages() {
-            hideError()
-            hideSuccess()
+        // ======================
+        // 验证回调函数组（关键修复）
+        // ======================
+        function handleCaptchaSuccess(token) {
+            console.log('[验证成功] 令牌:', token.slice(0,8)+'...')
+            verification.lastToken = token
+            processVerification()
         }
 
-        function showError(message) {
-            const el = document.getElementById('errorMsg')
-            el.textContent = message
-            el.style.display = 'block'
+        function handleCaptchaError() {
+            showError('验证组件加载失败，请：1. 检查网络 2. 刷新页面 3. 禁用广告拦截')
+            verification.widget = null
         }
 
-        function hideError() {
-            document.getElementById('errorMsg').style.display = 'none'
+        function handleCaptchaExpired() {
+            showError('验证会话已过期，请重新操作')
+            verification.lastToken = null
         }
 
-        function showSuccess(message) {
-            const el = document.getElementById('successMsg')
-            el.textContent = message
-            el.style.display = 'block'
-        }
-
-        function hideSuccess() {
-            document.getElementById('successMsg').style.display = 'none'
-        }
-
-        // 验证初始化
-        async function initTurnstile() {
+        // ======================
+        // 核心业务逻辑
+        // ======================
+        async function processVerification() {
             try {
-                if (typeof turnstile === 'undefined') {
-                    throw new Error('验证组件加载失败')
-                }
-
-                verification.widget = turnstile.render('#captchaContainer', {
-                    sitekey: CONFIG.siteKey,
-                    theme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
-                    size: 'normal',
-                    language: navigator.language.startsWith('zh') ? 'zh-CN' : 'en',
-                    callback: handleCaptchaSuccess,
-                    'error-callback': handleCaptchaError,
-                    'expired-callback': handleCaptchaExpired
-                })
-
-                if (CONFIG.debug) console.log('[Init] Turnstile 初始化成功')
-            } catch (err) {
-                showError(err.message)
-            }
-        }
-
-        // 验证成功处理
-        async function handleCaptchaSuccess(token) {
-            try {
-                verification.isLoading = true
-                hideMessages()
                 showLoading()
+                hideMessages()
 
-                const { valid } = await verifyToken(token)
+                // 后端验证
+                const { valid } = await verifyToken(verification.lastToken)
                 if (!valid) throw new Error('验证未通过')
 
+                // 生成跳转链接
                 const originalUrl = document.getElementById('urlInput').value.trim()
                 const proxyUrl = generateProxyUrl(originalUrl)
                 
-                if (CONFIG.debug) console.log('[Redirect]', proxyUrl)
+                console.log('[跳转]', proxyUrl)
                 window.location.href = proxyUrl
             } catch (err) {
                 showError(err.message)
                 resetCaptcha()
             } finally {
-                verification.isLoading = false
                 hideLoading()
             }
         }
 
-        // 生成代理链接
-        function generateProxyUrl(originalUrl) {
+        function generateProxyUrl(url) {
             try {
-                // 标准化URL
-                if (!/^https?:\/\//i.test(originalUrl)) {
-                    originalUrl = 'https://' + originalUrl
-                }
-                const url = new URL(originalUrl)
+                // 标准化输入
+                if (!/^https?:\/\//i.test(url)) url = `https://${url}`
+                const urlObj = new URL(url)
 
                 // 智能路由
-                if (url.pathname.includes('/releases/download/')) {
-                    return `https://github-faster.sunhaoming.dpdns.org/dl/${encodeURIComponent(url.href)}`
+                if (urlObj.pathname.includes('/releases/download/')) {
+                    return `https://github-faster.sunhaoming.dpdns.org/dl/${encodeURIComponent(url)}`
                 }
                 
-                if (url.pathname.includes('/blob/')) {
-                    const pathParts = url.pathname.split('/').filter(p => p)
-                    const [user, repo, , branch, ...filePath] = pathParts
-                    return `https://cdn.jsdelivr.net/gh/${user}/${repo}@${branch}/${filePath.join('/')}`
+                if (urlObj.pathname.includes('/blob/')) {
+                    const [user, repo, , branch, ...path] = urlObj.pathname.split('/').filter(p => p)
+                    return `https://cdn.jsdelivr.net/gh/${user}/${repo}@${branch}/${path.join('/')}`
                 }
 
-                return `https://github-faster.sunhaoming.dpdns.org/proxy/${encodeURIComponent(url.href)}`
+                return `https://github-faster.sunhaoming.dpdns.org/proxy/${encodeURIComponent(url)}`
             } catch (err) {
-                throw new Error('无效的链接格式')
+                throw new Error('链接格式错误')
             }
         }
 
-        // 后端验证
+        // ======================
+        // 辅助函数
+        // ======================
         async function verifyToken(token) {
             const controller = new AbortController()
             const timeoutId = setTimeout(() => controller.abort(), CONFIG.timeout)
@@ -328,21 +298,16 @@
                 })
 
                 clearTimeout(timeoutId)
-                
-                if (!response.ok) {
-                    throw new Error(`验证失败 (${response.status})`)
-                }
-
+                if (!response.ok) throw new Error(`HTTP ${response.status}`)
                 return await response.json()
             } catch (err) {
-                throw new Error(err.name === 'AbortError' ? '验证请求超时' : '验证服务不可用')
+                throw new Error(err.name === 'AbortError' ? '验证超时' : '验证服务异常')
             }
         }
 
-        // 输入验证
         function validateInput(url) {
             try {
-                if (!url) throw new Error('请输入GitHub链接')
+                if (!url) throw new Error('请输入链接地址')
                 
                 const urlObj = new URL(url.startsWith('http') ? url : `https://${url}`)
                 const allowedHosts = [
@@ -362,7 +327,9 @@
             }
         }
 
-        // 控制函数
+        // ======================
+        // UI控制函数
+        // ======================
         function showLoading() {
             document.getElementById('loading').style.display = 'block'
             document.querySelector('button').disabled = true
@@ -373,6 +340,16 @@
             document.querySelector('button').disabled = false
         }
 
+        function showError(message) {
+            document.getElementById('errorMsg').textContent = message
+            document.getElementById('errorMsg').style.display = 'block'
+        }
+
+        function hideMessages() {
+            document.getElementById('errorMsg').style.display = 'none'
+            document.getElementById('successMsg').style.display = 'none'
+        }
+
         function resetCaptcha() {
             if (verification.widget) {
                 turnstile.reset(verification.widget)
@@ -380,7 +357,9 @@
             }
         }
 
-        // 启动验证
+        // ======================
+        // 事件处理
+        // ======================
         async function startVerification() {
             if (verification.isLoading) return
 
@@ -391,11 +370,8 @@
                 const input = document.getElementById('urlInput').value.trim()
                 if (!validateInput(input)) return
 
-                if (!verification.widget) {
-                    await initTurnstile()
-                } else {
-                    turnstile.reset(verification.widget)
-                }
+                if (!verification.widget) await initTurnstile()
+                turnstile.reset(verification.widget)
             } catch (err) {
                 showError(err.message)
             } finally {
@@ -403,19 +379,35 @@
             }
         }
 
-        // 事件监听
-        document.getElementById('urlInput').addEventListener('keypress', e => {
-            if (e.key === 'Enter') {
-                e.preventDefault()
-                startVerification()
-            }
-        })
+        async function initTurnstile() {
+            try {
+                if (typeof turnstile === 'undefined') {
+                    throw new Error('验证系统未加载')
+                }
 
-        // 初始化
+                verification.widget = turnstile.render('#captchaContainer', {
+                    sitekey: CONFIG.siteKey,
+                    theme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
+                    size: 'normal',
+                    language: navigator.language.startsWith('zh') ? 'zh-CN' : 'en',
+                    callback: handleCaptchaSuccess,
+                    'error-callback': handleCaptchaError,
+                    'expired-callback': handleCaptchaExpired
+                })
+
+                if (CONFIG.debug) console.log('[初始化] Turnstile 验证组件已加载')
+            } catch (err) {
+                handleCaptchaError()
+            }
+        }
+
+        // ======================
+        // 初始化入口
+        // ======================
         window.addEventListener('load', () => {
             initTurnstile()
             hideMessages()
-            if (CONFIG.debug) console.log('[Init] 系统初始化完成')
+            if (CONFIG.debug) console.log('[系统] 初始化完成')
         })
     </script>
 </body>
